@@ -1,0 +1,37 @@
+{
+  "id": "rils-potion-crafting-kr",
+  "title": "RILs Potion Crafting KR",
+  "description": "Korean translation for Potion Crafting & Gathering, powered by Babele.",
+  "version": "1.0.0",
+  "authors": [
+    {
+      "name": "RestInLOV3"
+    }
+  ],
+  "languages": [
+    {
+      "lang": "ko",
+      "name": "한국어",
+      "path": "languages/ko.json"
+    }
+  ],
+  "esmodules": [
+    "scripts/babele-register.js"
+  ],
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13"
+  },
+  "relationships": {
+    "requires": [
+      {
+        "id": "babele",
+        "type": "module"
+      },
+      {
+        "id": "potion-crafting-and-gathering",
+        "type": "module"
+      }
+    ]
+  }
+}
