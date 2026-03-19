@@ -30,13 +30,34 @@ const SOURCE_LANG =
 const OUTPUT_PATH = join(ROOT, "languages/ko");
 
 const PACK_CONFIG = {
-  "potion-crafting-and-gathering-ingredients": { label: "포션 제작 & 수집 재료",   type: "Item" },
-  "potion-crafting-and-gathering-alchemy":     { label: "포션 제작 & 수집 연금술", type: "Item" },
-  "potion-crafting-and-gathering-herbalism":   { label: "포션 제작 & 수집 약초학", type: "Item" },
-  "potion-crafting-and-gathering-poisons":     { label: "포션 제작 & 수집 독",     type: "Item" },
-  "potion-crafting-and-gathering-journal":     { label: "포션 제작 & 수집 저널",   type: "JournalEntry" },
-  "potion-crafting-and-gathering-recipes":     { label: "포션 제작 & 수집 레시피", type: "JournalEntry" },
-  "potion-crafting-and-gathering-tables":      { label: "포션 제작 & 수집 표",     type: "RollTable" },
+  "potion-crafting-and-gathering-ingredients": {
+    label: "포션 제작 & 수집 재료",
+    type: "Item",
+  },
+  "potion-crafting-and-gathering-alchemy": {
+    label: "포션 제작 & 수집 연금술",
+    type: "Item",
+  },
+  "potion-crafting-and-gathering-herbalism": {
+    label: "포션 제작 & 수집 약초학",
+    type: "Item",
+  },
+  "potion-crafting-and-gathering-poisons": {
+    label: "포션 제작 & 수집 독",
+    type: "Item",
+  },
+  "potion-crafting-and-gathering-journal": {
+    label: "포션 제작 & 수집 저널",
+    type: "JournalEntry",
+  },
+  "potion-crafting-and-gathering-recipes": {
+    label: "포션 제작 & 수집 레시피",
+    type: "JournalEntry",
+  },
+  "potion-crafting-and-gathering-tables": {
+    label: "포션 제작 & 수집 표",
+    type: "RollTable",
+  },
 };
 
 // ─── API 키 로드 ─────────────────────────────────────────────────────────────
@@ -50,38 +71,39 @@ async function loadTranslator() {
     return new deepl.Translator(secrets.DEEPL_API);
   } catch (e) {
     console.error(`SECRETS.json 로드 실패: ${e.message}`);
-    console.error(`루트 폴더에 SECRETS.json을 만들어주세요: { "DEEPL_API": "your-key" }`);
+    console.error(
+      `루트 폴더에 SECRETS.json을 만들어주세요: { "DEEPL_API": "your-key" }`,
+    );
     process.exit(1);
   }
 }
 
 // ─── LevelDB 읽기 ────────────────────────────────────────────────────────────
 
+/**
+ * git의 CRLF 자동변환으로 LevelDB CURRENT 파일에 \r\n이 들어가면
+ * LevelDB가 'MANIFEST-xxxxx\r' 같은 잘못된 파일명을 만들어서 IO 오류가 남.
+ * 읽기 전에 CURRENT 파일을 LF로 정규화한다.
+ */
+async function fixCurrentFile(packPath) {
+  const currentPath = packPath + "/CURRENT";
+  const content = await fs.readFile(currentPath, "utf-8");
+  if (content.includes("\r")) {
+    await fs.writeFile(currentPath, content.replaceAll("\r\n", "\n").replaceAll("\r", "\n"), "utf-8");
+  }
+}
+
 async function readLevelDB(packPath) {
-  return new Promise((resolve, reject) => {
-    const db = new ClassicLevel(packPath, { valueEncoding: "json" });
-
-    const onError = (err) => {
-      reject(new Error(`LevelDB 열기 실패 (${packPath}): ${err.message}`));
-    };
-
-    db.once("error", onError);
-    db.once("open", () => {
-      db.removeListener("error", onError);
-      db.iterator()
-        .all()
-        .then(async (entries) => {
-          await db.close();
-          const docs = {};
-          for (const [key, value] of entries) docs[key] = value;
-          resolve(docs);
-        })
-        .catch(async (err) => {
-          await db.close().catch(() => {});
-          reject(err);
-        });
-    });
-  });
+  // Windows에서 path.join이 역슬래시를 생성하면 LevelDB가 경로를 잘못 처리함 → 슬래시로 통일
+  const normalizedPath = packPath.replaceAll("\\", "/");
+  await fixCurrentFile(normalizedPath);
+  const db = new ClassicLevel(normalizedPath, { valueEncoding: "json" });
+  await db.open();
+  const entries = await db.iterator().all();
+  await db.close();
+  const docs = {};
+  for (const [key, value] of entries) docs[key] = value;
+  return docs;
 }
 
 // ─── 번역 유틸 ───────────────────────────────────────────────────────────────
@@ -91,7 +113,12 @@ async function sleep(ms) {
 }
 
 /** 텍스트 배열을 배치 번역 */
-async function translateBatch(translator, texts, isHtml = false, batchSize = 30) {
+async function translateBatch(
+  translator,
+  texts,
+  isHtml = false,
+  batchSize = 30,
+) {
   const results = new Array(texts.length).fill("");
   const indices = [];
   const nonEmpty = [];
@@ -115,7 +142,7 @@ async function translateBatch(translator, texts, isHtml = false, batchSize = 30)
     });
     if (i + batchSize < nonEmpty.length) {
       process.stdout.write(
-        `  번역 중: ${Math.min(i + batchSize, nonEmpty.length)}/${nonEmpty.length}\r`
+        `  번역 중: ${Math.min(i + batchSize, nonEmpty.length)}/${nonEmpty.length}\r`,
       );
       await sleep(500);
     }
@@ -137,7 +164,7 @@ async function translateObjectWithCache(translator, sourceObj, targetObj) {
       out[key] = await translateObjectWithCache(
         translator,
         sourceObj[key],
-        targetObj?.[key]
+        targetObj?.[key],
       );
     }
     return out;
@@ -159,10 +186,16 @@ async function translateUIStrings(translator) {
 
   let targetJson = {};
   if (existsSync(koJsonPath)) {
-    try { targetJson = JSON.parse(await fs.readFile(koJsonPath, "utf-8")); } catch {}
+    try {
+      targetJson = JSON.parse(await fs.readFile(koJsonPath, "utf-8"));
+    } catch {}
   }
 
-  const translated = await translateObjectWithCache(translator, sourceJson, targetJson);
+  const translated = await translateObjectWithCache(
+    translator,
+    sourceJson,
+    targetJson,
+  );
   await fs.writeFile(koJsonPath, JSON.stringify(translated, null, 2), "utf-8");
   console.log(`  저장: ${koJsonPath}`);
 }
@@ -171,18 +204,27 @@ async function translateUIStrings(translator) {
 
 async function loadExistingAsync(outputFile, label) {
   if (existsSync(outputFile)) {
-    try { return JSON.parse(await fs.readFile(outputFile, "utf-8")); } catch {}
+    try {
+      return JSON.parse(await fs.readFile(outputFile, "utf-8"));
+    } catch {}
   }
   return { label, entries: {} };
 }
 
 async function saveOutput(outputFile, label, entries) {
-  await fs.writeFile(outputFile, JSON.stringify({ label, entries }, null, 2), "utf-8");
+  await fs.writeFile(
+    outputFile,
+    JSON.stringify({ label, entries }, null, 2),
+    "utf-8",
+  );
 }
 
 /** Item 팩 처리 */
 async function processItemPack(translator, packName, config) {
-  const outputFile = join(OUTPUT_PATH, `potion-crafting-and-gathering.${packName}.json`);
+  const outputFile = join(
+    OUTPUT_PATH,
+    `potion-crafting-and-gathering.${packName}.json`,
+  );
   const existing = await loadExistingAsync(outputFile, config.label);
   const rawDocs = await readLevelDB(join(SOURCE_PACKS, packName));
 
@@ -190,14 +232,26 @@ async function processItemPack(translator, packName, config) {
   for (const [key, doc] of Object.entries(rawDocs)) {
     if (!doc.name || key.includes(".")) continue;
     if (existing.entries[doc.name]) continue;
-    newItems.push({ name: doc.name, description: doc.system?.description?.value || "" });
+    newItems.push({
+      name: doc.name,
+      description: doc.system?.description?.value || "",
+    });
   }
 
-  console.log(`  신규: ${newItems.length}개 / 기존: ${Object.keys(existing.entries).length}개`);
+  console.log(
+    `  신규: ${newItems.length}개 / 기존: ${Object.keys(existing.entries).length}개`,
+  );
   if (!newItems.length) return;
 
-  const translatedNames = await translateBatch(translator, newItems.map((i) => i.name));
-  const translatedDescs = await translateBatch(translator, newItems.map((i) => i.description), true);
+  const translatedNames = await translateBatch(
+    translator,
+    newItems.map((i) => i.name),
+  );
+  const translatedDescs = await translateBatch(
+    translator,
+    newItems.map((i) => i.description),
+    true,
+  );
 
   const entries = { ...existing.entries };
   newItems.forEach((item, idx) => {
@@ -213,7 +267,10 @@ async function processItemPack(translator, packName, config) {
 
 /** JournalEntry 팩 처리 */
 async function processJournalPack(translator, packName, config) {
-  const outputFile = join(OUTPUT_PATH, `potion-crafting-and-gathering.${packName}.json`);
+  const outputFile = join(
+    OUTPUT_PATH,
+    `potion-crafting-and-gathering.${packName}.json`,
+  );
   const existing = await loadExistingAsync(outputFile, config.label);
   const rawDocs = await readLevelDB(join(SOURCE_PACKS, packName));
 
@@ -224,7 +281,8 @@ async function processJournalPack(translator, packName, config) {
     if (key.includes("pages")) {
       const afterPrefix = key.replace(/^!journal\.pages!/, "");
       const dotIdx = afterPrefix.indexOf(".");
-      const journalId = dotIdx >= 0 ? afterPrefix.slice(0, dotIdx) : afterPrefix;
+      const journalId =
+        dotIdx >= 0 ? afterPrefix.slice(0, dotIdx) : afterPrefix;
       if (!pagesByJournal[journalId]) pagesByJournal[journalId] = [];
       pagesByJournal[journalId].push(doc);
     } else {
@@ -234,26 +292,37 @@ async function processJournalPack(translator, packName, config) {
   }
 
   const newJournals = Object.values(journals).filter(
-    (j) => j.name && !existing.entries[j.name]
+    (j) => j.name && !existing.entries[j.name],
   );
 
-  console.log(`  신규: ${newJournals.length}개 / 기존: ${Object.keys(existing.entries).length}개`);
+  console.log(
+    `  신규: ${newJournals.length}개 / 기존: ${Object.keys(existing.entries).length}개`,
+  );
   if (!newJournals.length) return;
 
   const entries = { ...existing.entries };
 
   for (const journal of newJournals) {
     process.stdout.write(`  번역 중: "${journal.name}"...\n`);
-    const [[translatedName]] = [await translator.translateText([journal.name], "en", "ko")];
+    const [[translatedName]] = [
+      await translator.translateText([journal.name], "en", "ko"),
+    ];
     const journalPages = pagesByJournal[journal._id] || [];
     const pageEntries = {};
 
     for (const page of journalPages) {
       const pageName = page.name || page.title || "";
       const pageContent = page.text?.content || "";
-      const [[tPageName]] = [await translator.translateText([pageName], "en", "ko")];
+      const [[tPageName]] = [
+        await translator.translateText([pageName], "en", "ko"),
+      ];
       const tContent = pageContent
-        ? (await translator.translateText([pageContent], "en", "ko", { tagHandling: "html", ignoreTags: ["img", "br", "hr"] }))[0].text
+        ? (
+            await translator.translateText([pageContent], "en", "ko", {
+              tagHandling: "html",
+              ignoreTags: ["img", "br", "hr"],
+            })
+          )[0].text
         : "";
       if (pageName) {
         pageEntries[pageName] = {
@@ -277,7 +346,10 @@ async function processJournalPack(translator, packName, config) {
 
 /** RollTable 팩 처리 */
 async function processTablePack(translator, packName, config) {
-  const outputFile = join(OUTPUT_PATH, `potion-crafting-and-gathering.${packName}.json`);
+  const outputFile = join(
+    OUTPUT_PATH,
+    `potion-crafting-and-gathering.${packName}.json`,
+  );
   const existing = await loadExistingAsync(outputFile, config.label);
   const rawDocs = await readLevelDB(join(SOURCE_PACKS, packName));
 
@@ -298,17 +370,23 @@ async function processTablePack(translator, packName, config) {
   }
 
   const newTables = Object.values(tables).filter(
-    (t) => t.name && !existing.entries[t.name]
+    (t) => t.name && !existing.entries[t.name],
   );
 
-  console.log(`  신규: ${newTables.length}개 / 기존: ${Object.keys(existing.entries).length}개`);
+  console.log(
+    `  신규: ${newTables.length}개 / 기존: ${Object.keys(existing.entries).length}개`,
+  );
   if (!newTables.length) return;
 
   const entries = { ...existing.entries };
 
   for (const table of newTables) {
     process.stdout.write(`  번역 중: "${table.name}"...\n`);
-    const [translatedName] = await translator.translateText([table.name], "en", "ko");
+    const [translatedName] = await translator.translateText(
+      [table.name],
+      "en",
+      "ko",
+    );
     const [translatedDesc] = table.description
       ? await translator.translateText([table.description], "en", "ko")
       : [{ text: "" }];
@@ -320,7 +398,9 @@ async function processTablePack(translator, packName, config) {
       : [];
 
     const resultsMap = {};
-    resultTexts.forEach((text, idx) => { resultsMap[text] = translatedResults[idx]; });
+    resultTexts.forEach((text, idx) => {
+      resultsMap[text] = translatedResults[idx];
+    });
 
     entries[table.name] = {
       name: translatedName.text,
@@ -344,7 +424,9 @@ async function inspectPack(packName) {
     const keys = Object.keys(docs);
     keys.slice(0, 10).forEach((k) => {
       const doc = docs[k];
-      console.log(`  ${k} → name: "${doc.name || "(없음)"}", type: ${doc.type || "(없음)"}`);
+      console.log(
+        `  ${k} → name: "${doc.name || "(없음)"}", type: ${doc.type || "(없음)"}`,
+      );
     });
     console.log(`  총 ${keys.length}개`);
   } catch (err) {
@@ -357,10 +439,12 @@ async function inspectPack(packName) {
 async function main() {
   const args = process.argv.slice(2);
   const isInspect = args.includes("--inspect");
-  const packFilter = args.includes("--pack") ? args[args.indexOf("--pack") + 1] : null;
+  const packFilter = args.includes("--pack")
+    ? args[args.indexOf("--pack") + 1]
+    : null;
 
   const targetPacks = Object.entries(PACK_CONFIG).filter(
-    ([name]) => !packFilter || name.includes(packFilter)
+    ([name]) => !packFilter || name.includes(packFilter),
   );
 
   if (isInspect) {
@@ -375,7 +459,9 @@ async function main() {
   const usage = await translator.getUsage();
   if (usage.character) {
     const { count, limit } = usage.character;
-    console.log(`DeepL 사용량: ${count.toLocaleString()} / ${limit.toLocaleString()} 문자`);
+    console.log(
+      `DeepL 사용량: ${count.toLocaleString()} / ${limit.toLocaleString()} 문자`,
+    );
     if (count / limit > 0.9) console.warn("⚠️  사용량 90% 초과!");
   }
 
@@ -388,9 +474,12 @@ async function main() {
   for (const [packName, config] of targetPacks) {
     console.log(`\n[${packName}]`);
     try {
-      if (config.type === "Item")              await processItemPack(translator, packName, config);
-      else if (config.type === "JournalEntry") await processJournalPack(translator, packName, config);
-      else if (config.type === "RollTable")    await processTablePack(translator, packName, config);
+      if (config.type === "Item")
+        await processItemPack(translator, packName, config);
+      else if (config.type === "JournalEntry")
+        await processJournalPack(translator, packName, config);
+      else if (config.type === "RollTable")
+        await processTablePack(translator, packName, config);
       console.log("  완료 ✓");
     } catch (err) {
       console.error(`  실패: ${err.message}`);
@@ -405,9 +494,13 @@ async function main() {
     const remaining = limit - count;
     const pct = count / limit;
     if (pct > 0.9)
-      console.log(`\n⚠️  DeepL 사용량: ${count.toLocaleString()}/${limit.toLocaleString()} (잔여 ${remaining.toLocaleString()})`);
+      console.log(
+        `\n⚠️  DeepL 사용량: ${count.toLocaleString()}/${limit.toLocaleString()} (잔여 ${remaining.toLocaleString()})`,
+      );
     else
-      console.log(`\n✅ DeepL 사용량: ${count.toLocaleString()}/${limit.toLocaleString()} (잔여 ${remaining.toLocaleString()})`);
+      console.log(
+        `\n✅ DeepL 사용량: ${count.toLocaleString()}/${limit.toLocaleString()} (잔여 ${remaining.toLocaleString()})`,
+      );
   }
 
   console.log("\n전체 번역 완료!");
