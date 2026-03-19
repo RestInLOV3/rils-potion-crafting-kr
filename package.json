@@ -1,0 +1,12 @@
+{
+  "name": "rils-potion-crafting-kr",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "translate": "node scripts/translate.js",
+    "inspect": "node scripts/translate.js --inspect"
+  },
+  "devDependencies": {
+    "classic-level": "^1.4.1"
+  }
+}
