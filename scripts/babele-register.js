@@ -3,7 +3,7 @@ Hooks.once('init', () => {
     game.babele.register({
       module: 'rils-potion-crafting-kr',
       lang: 'ko',
-      dir: 'modules/rils-potion-crafting-kr/languages/ko'
+      dir: 'languages/ko'
     });
   }
 });
