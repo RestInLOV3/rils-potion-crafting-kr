@@ -1,4 +1,65 @@
 {
-  "label": "포션 제작 & 수집 테이블",
-  "entries": {}
+  "label": "포션 제작 & 수집 표",
+  "entries": {
+    "Gathering: Desert": {
+      "name": "채집 사막",
+      "description": "식물 폴더의 콘텐츠로 만든 임의의 테이블입니다."
+    },
+    "Gathering: Volcanos": {
+      "name": "모임 화산",
+      "description": "식물 폴더의 콘텐츠로 만든 임의의 테이블입니다."
+    },
+    "Gathering: Hill": {
+      "name": "모임 언덕",
+      "description": "식물 폴더의 콘텐츠로 만든 임의의 테이블입니다."
+    },
+    "Gathering: Forests": {
+      "name": "채집 숲",
+      "description": "식물 폴더의 콘텐츠로 만든 임의의 테이블입니다."
+    },
+    "Gathering: Coast": {
+      "name": "모임 해안",
+      "description": "식물 폴더의 콘텐츠로 만든 임의의 테이블입니다."
+    },
+    "All Plants": {
+      "name": "모든 식물",
+      "description": "식물 폴더의 콘텐츠로 만든 임의의 테이블입니다."
+    },
+    "Gathering: Blightshore": {
+      "name": "채집 블레이츠쇼어",
+      "description": "식물 폴더의 콘텐츠로 만든 임의의 테이블입니다."
+    },
+    "Gathering: Arctic": {
+      "name": "모임: 북극",
+      "description": "식물 폴더의 콘텐츠로 만든 임의의 테이블입니다."
+    },
+    "Gathering: Urban Areas": {
+      "name": "모임 도시 지역",
+      "description": "식물 폴더의 콘텐츠로 만든 임의의 테이블입니다."
+    },
+    "Gathering: Grasslands": {
+      "name": "채집 초원",
+      "description": "식물 폴더의 콘텐츠로 만든 임의의 테이블입니다."
+    },
+    "Gathering: Underground": {
+      "name": "모임: 지하",
+      "description": "식물 폴더의 콘텐츠로 만든 임의의 테이블입니다."
+    },
+    "Gathering: Savannahs": {
+      "name": "채집 사바나",
+      "description": "식물 폴더의 콘텐츠로 만든 임의의 테이블입니다."
+    },
+    "Gathering: Mountains": {
+      "name": "채집 산악",
+      "description": "식물 폴더의 콘텐츠로 만든 임의의 테이블입니다."
+    },
+    "Gathering: Swamp": {
+      "name": "채집 늪",
+      "description": "식물 폴더의 콘텐츠로 만든 임의의 테이블입니다."
+    },
+    "Gathering: Feywild": {
+      "name": "모임 페이와일드",
+      "description": "식물 폴더의 콘텐츠로 만든 임의의 테이블입니다."
+    }
+  }
 }

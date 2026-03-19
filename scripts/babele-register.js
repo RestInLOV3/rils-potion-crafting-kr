@@ -1,4 +1,4 @@
-Hooks.once('babele.ready', () => {
+Hooks.once('init', () => {
   if (typeof game.babele !== 'undefined') {
     game.babele.register({
       module: 'rils-potion-crafting-kr',
