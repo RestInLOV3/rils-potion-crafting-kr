@@ -1,171 +1,203 @@
 #!/usr/bin/env node
 /**
- * translate.js - DeepL API를 이용한 Potion Crafting & Gathering 한국어 번역 자동화
+ * translate.js - DeepL을 이용한 Potion Crafting & Gathering 한국어 번역 자동화
  *
  * 사용법:
- *   DEEPL_API_KEY=your-key node scripts/translate.js
- *   DEEPL_API_KEY=your-key node scripts/translate.js --inspect          (DB 구조 확인)
- *   DEEPL_API_KEY=your-key node scripts/translate.js --pack ingredients  (특정 팩만)
+ *   node scripts/translate.js                          전체 번역
+ *   node scripts/translate.js --inspect                DB 구조 확인 (API 키 불필요)
+ *   node scripts/translate.js --pack ingredients       특정 팩만 번역
  *
- * 특징:
- *   - 이미 번역된 항목은 건너뜀 (중단 후 재실행 가능)
- *   - HTML 태그 보존 (DeepL tag_handling=html)
- *   - 배치 처리로 API 호출 최소화
+ * API 키: 모듈 루트에 SECRETS.json 파일을 만들고 아래 형식으로 저장
+ *   { "DEEPL_API": "your-key-here" }
  */
 
-import { ClassicLevel } from 'classic-level';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import * as deepl from "deepl-node";
+import { ClassicLevel } from "classic-level";
+import fs from "fs/promises";
+import { existsSync } from "fs";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT = join(__dirname, '..');
+const ROOT = join(__dirname, "..");
 
 // ─── 설정 ───────────────────────────────────────────────────────────────────
 
-const DEEPL_API_KEY = process.env.DEEPL_API_KEY;
-const SOURCE_PACKS = 'C:/Users/HGray/Desktop/Artwork/FVTT/modules/potion-crafting-and-gathering/packs';
-const OUTPUT_PATH = join(ROOT, 'languages/ko');
+const SOURCE_PACKS =
+  "C:/Users/HGray/Desktop/Artwork/FVTT/modules/potion-crafting-and-gathering/packs";
+const SOURCE_LANG =
+  "C:/Users/HGray/Desktop/Artwork/FVTT/modules/potion-crafting-and-gathering/languages/en.json";
+const OUTPUT_PATH = join(ROOT, "languages/ko");
 
 const PACK_CONFIG = {
-  'potion-crafting-and-gathering-ingredients': { label: '포션 제작 & 수집 재료',   type: 'Item' },
-  'potion-crafting-and-gathering-alchemy':     { label: '포션 제작 & 수집 연금술', type: 'Item' },
-  'potion-crafting-and-gathering-herbalism':   { label: '포션 제작 & 수집 약초학', type: 'Item' },
-  'potion-crafting-and-gathering-poisons':     { label: '포션 제작 & 수집 독',     type: 'Item' },
-  'potion-crafting-and-gathering-journal':     { label: '포션 제작 & 수집 저널',   type: 'JournalEntry' },
-  'potion-crafting-and-gathering-recipes':     { label: '포션 제작 & 수집 레시피', type: 'JournalEntry' },
-  'potion-crafting-and-gathering-tables':      { label: '포션 제작 & 수집 표',     type: 'RollTable' },
+  "potion-crafting-and-gathering-ingredients": { label: "포션 제작 & 수집 재료",   type: "Item" },
+  "potion-crafting-and-gathering-alchemy":     { label: "포션 제작 & 수집 연금술", type: "Item" },
+  "potion-crafting-and-gathering-herbalism":   { label: "포션 제작 & 수집 약초학", type: "Item" },
+  "potion-crafting-and-gathering-poisons":     { label: "포션 제작 & 수집 독",     type: "Item" },
+  "potion-crafting-and-gathering-journal":     { label: "포션 제작 & 수집 저널",   type: "JournalEntry" },
+  "potion-crafting-and-gathering-recipes":     { label: "포션 제작 & 수집 레시피", type: "JournalEntry" },
+  "potion-crafting-and-gathering-tables":      { label: "포션 제작 & 수집 표",     type: "RollTable" },
 };
 
-// ─── DeepL API ───────────────────────────────────────────────────────────────
+// ─── API 키 로드 ─────────────────────────────────────────────────────────────
 
-async function deeplTranslate(texts, isHtml = false) {
-  const nonEmptyIndices = [];
-  const nonEmptyTexts = [];
-  texts.forEach((t, i) => {
-    if (t && t.trim()) {
-      nonEmptyIndices.push(i);
-      nonEmptyTexts.push(t);
-    }
-  });
-  if (!nonEmptyTexts.length) return [...texts];
-
-  const params = new URLSearchParams();
-  nonEmptyTexts.forEach(t => params.append('text', t));
-  params.append('source_lang', 'EN');
-  params.append('target_lang', 'KO');
-  if (isHtml) {
-    params.append('tag_handling', 'html');
-    params.append('ignore_tags', 'img,br,hr');
+async function loadTranslator() {
+  const secretsPath = join(ROOT, "SECRETS.json");
+  try {
+    const raw = await fs.readFile(secretsPath, "utf-8");
+    const secrets = JSON.parse(raw);
+    if (!secrets.DEEPL_API) throw new Error("DEEPL_API 키가 없습니다.");
+    return new deepl.Translator(secrets.DEEPL_API);
+  } catch (e) {
+    console.error(`SECRETS.json 로드 실패: ${e.message}`);
+    console.error(`루트 폴더에 SECRETS.json을 만들어주세요: { "DEEPL_API": "your-key" }`);
+    process.exit(1);
   }
-
-  const response = await fetch('https://api-free.deepl.com/v2/translate', {
-    method: 'POST',
-    headers: {
-      'Authorization': `DeepL-Auth-Key ${DEEPL_API_KEY}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: params.toString(),
-  });
-
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`DeepL API ${response.status}: ${body}`);
-  }
-
-  const data = await response.json();
-  const result = [...texts];
-  nonEmptyIndices.forEach((origIdx, i) => {
-    result[origIdx] = data.translations[i].text;
-  });
-  return result;
 }
+
+// ─── LevelDB 읽기 ────────────────────────────────────────────────────────────
+
+async function readLevelDB(packPath) {
+  return new Promise((resolve, reject) => {
+    const db = new ClassicLevel(packPath, { valueEncoding: "json" });
+
+    const onError = (err) => {
+      reject(new Error(`LevelDB 열기 실패 (${packPath}): ${err.message}`));
+    };
+
+    db.once("error", onError);
+    db.once("open", () => {
+      db.removeListener("error", onError);
+      db.iterator()
+        .all()
+        .then(async (entries) => {
+          await db.close();
+          const docs = {};
+          for (const [key, value] of entries) docs[key] = value;
+          resolve(docs);
+        })
+        .catch(async (err) => {
+          await db.close().catch(() => {});
+          reject(err);
+        });
+    });
+  });
+}
+
+// ─── 번역 유틸 ───────────────────────────────────────────────────────────────
 
 async function sleep(ms) {
-  return new Promise(r => setTimeout(r, ms));
+  return new Promise((r) => setTimeout(r, ms));
 }
 
-/** 배치 단위로 번역 (rate limit 방지) */
-async function translateBatch(items, isHtml = false, batchSize = 30) {
-  const results = [];
-  for (let i = 0; i < items.length; i += batchSize) {
-    const batch = items.slice(i, i + batchSize);
-    const translated = await deeplTranslate(batch, isHtml);
-    results.push(...translated);
-    if (i + batchSize < items.length) {
-      process.stdout.write(`  번역 중: ${Math.min(i + batchSize, items.length)}/${items.length}\r`);
+/** 텍스트 배열을 배치 번역 */
+async function translateBatch(translator, texts, isHtml = false, batchSize = 30) {
+  const results = new Array(texts.length).fill("");
+  const indices = [];
+  const nonEmpty = [];
+
+  texts.forEach((t, i) => {
+    if (t && t.trim()) {
+      indices.push(i);
+      nonEmpty.push(t);
+    }
+  });
+  if (!nonEmpty.length) return results;
+
+  for (let i = 0; i < nonEmpty.length; i += batchSize) {
+    const batch = nonEmpty.slice(i, i + batchSize);
+    const translated = await translator.translateText(batch, "en", "ko", {
+      tagHandling: isHtml ? "html" : undefined,
+      ignoreTags: isHtml ? ["img", "br", "hr"] : undefined,
+    });
+    batch.forEach((_, j) => {
+      results[indices[i + j]] = translated[j].text;
+    });
+    if (i + batchSize < nonEmpty.length) {
+      process.stdout.write(
+        `  번역 중: ${Math.min(i + batchSize, nonEmpty.length)}/${nonEmpty.length}\r`
+      );
       await sleep(500);
     }
   }
   return results;
 }
 
-// ─── LevelDB 읽기 ────────────────────────────────────────────────────────────
+// ─── UI 언어 파일 번역 (ko.json) ─────────────────────────────────────────────
 
-async function readLevelDB(packPath) {
-  const db = new ClassicLevel(packPath, { valueEncoding: 'json' });
-  const docs = {};
-  try {
-    for await (const [key, value] of db.iterator()) {
-      docs[key] = value;
+async function translateObjectWithCache(translator, sourceObj, targetObj) {
+  if (typeof sourceObj === "string") {
+    if (!sourceObj.trim()) return sourceObj;
+    if (typeof targetObj === "string" && targetObj.trim()) return targetObj; // 이미 번역됨
+    const [result] = await translator.translateText([sourceObj], "en", "ko");
+    return result.text;
+  } else if (typeof sourceObj === "object" && sourceObj !== null) {
+    const out = Array.isArray(sourceObj) ? [] : {};
+    for (const key of Object.keys(sourceObj)) {
+      out[key] = await translateObjectWithCache(
+        translator,
+        sourceObj[key],
+        targetObj?.[key]
+      );
     }
-  } finally {
-    await db.close();
+    return out;
   }
-  return docs;
+  return sourceObj;
 }
 
-/** DB 구조 확인용 (--inspect 플래그) */
-async function inspectPack(packName) {
-  const packPath = join(SOURCE_PACKS, packName);
-  console.log(`\n[${packName}] 키 목록:`);
-  const docs = await readLevelDB(packPath);
-  const keys = Object.keys(docs);
-  keys.slice(0, 10).forEach(k => {
-    const doc = docs[k];
-    console.log(`  ${k} → name: "${doc.name || '(없음)'}", type: ${doc.type || '(없음)'}`);
-  });
-  if (keys.length > 10) console.log(`  ... 총 ${keys.length}개`);
+async function translateUIStrings(translator) {
+  console.log("\n[ko.json] UI 문자열 번역 중...");
+  const koJsonPath = join(ROOT, "languages/ko.json");
+
+  let sourceJson;
+  try {
+    sourceJson = JSON.parse(await fs.readFile(SOURCE_LANG, "utf-8"));
+  } catch {
+    console.log("  en.json 없음, 건너뜀");
+    return;
+  }
+
+  let targetJson = {};
+  if (existsSync(koJsonPath)) {
+    try { targetJson = JSON.parse(await fs.readFile(koJsonPath, "utf-8")); } catch {}
+  }
+
+  const translated = await translateObjectWithCache(translator, sourceJson, targetJson);
+  await fs.writeFile(koJsonPath, JSON.stringify(translated, null, 2), "utf-8");
+  console.log(`  저장: ${koJsonPath}`);
 }
 
 // ─── 팩 유형별 처리 ──────────────────────────────────────────────────────────
 
-function loadExisting(outputFile, label) {
+async function loadExistingAsync(outputFile, label) {
   if (existsSync(outputFile)) {
-    return JSON.parse(readFileSync(outputFile, 'utf-8'));
+    try { return JSON.parse(await fs.readFile(outputFile, "utf-8")); } catch {}
   }
   return { label, entries: {} };
 }
 
-function saveOutput(outputFile, label, entries) {
-  const output = { label, entries };
-  writeFileSync(outputFile, JSON.stringify(output, null, 2), 'utf-8');
+async function saveOutput(outputFile, label, entries) {
+  await fs.writeFile(outputFile, JSON.stringify({ label, entries }, null, 2), "utf-8");
 }
 
-/** Item 팩 처리 (ingredients, alchemy, herbalism, poisons) */
-async function processItemPack(packName, config) {
+/** Item 팩 처리 */
+async function processItemPack(translator, packName, config) {
   const outputFile = join(OUTPUT_PATH, `potion-crafting-and-gathering.${packName}.json`);
-  const existing = loadExisting(outputFile, config.label);
-
+  const existing = await loadExistingAsync(outputFile, config.label);
   const rawDocs = await readLevelDB(join(SOURCE_PACKS, packName));
 
-  // 최상위 문서만 (서브문서 제외)
   const newItems = [];
   for (const [key, doc] of Object.entries(rawDocs)) {
-    if (!doc.name || key.includes('.')) continue;
-    if (existing.entries[doc.name]) continue; // 이미 번역됨
-
-    newItems.push({
-      name: doc.name,
-      description: doc.system?.description?.value || '',
-    });
+    if (!doc.name || key.includes(".")) continue;
+    if (existing.entries[doc.name]) continue;
+    newItems.push({ name: doc.name, description: doc.system?.description?.value || "" });
   }
 
   console.log(`  신규: ${newItems.length}개 / 기존: ${Object.keys(existing.entries).length}개`);
   if (!newItems.length) return;
 
-  const translatedNames = await translateBatch(newItems.map(i => i.name));
-  const translatedDescs = await translateBatch(newItems.map(i => i.description), true);
+  const translatedNames = await translateBatch(translator, newItems.map((i) => i.name));
+  const translatedDescs = await translateBatch(translator, newItems.map((i) => i.description), true);
 
   const entries = { ...existing.entries };
   newItems.forEach((item, idx) => {
@@ -175,37 +207,34 @@ async function processItemPack(packName, config) {
     };
   });
 
-  saveOutput(outputFile, config.label, entries);
+  await saveOutput(outputFile, config.label, entries);
   console.log(`  저장: ${outputFile}`);
 }
 
-/** JournalEntry 팩 처리 (journal, recipes) */
-async function processJournalPack(packName, config) {
+/** JournalEntry 팩 처리 */
+async function processJournalPack(translator, packName, config) {
   const outputFile = join(OUTPUT_PATH, `potion-crafting-and-gathering.${packName}.json`);
-  const existing = loadExisting(outputFile, config.label);
-
+  const existing = await loadExistingAsync(outputFile, config.label);
   const rawDocs = await readLevelDB(join(SOURCE_PACKS, packName));
 
-  // 저널 엔트리와 페이지 분리
   const journals = {};
   const pagesByJournal = {};
 
   for (const [key, doc] of Object.entries(rawDocs)) {
-    if (key.includes('pages')) {
-      // 페이지 서브문서: key 형식 = "!journal.pages!journalId.pageId"
-      const afterPrefix = key.replace(/^!journal\.pages!/, '');
-      const dotIdx = afterPrefix.indexOf('.');
+    if (key.includes("pages")) {
+      const afterPrefix = key.replace(/^!journal\.pages!/, "");
+      const dotIdx = afterPrefix.indexOf(".");
       const journalId = dotIdx >= 0 ? afterPrefix.slice(0, dotIdx) : afterPrefix;
       if (!pagesByJournal[journalId]) pagesByJournal[journalId] = [];
       pagesByJournal[journalId].push(doc);
     } else {
-      const id = doc._id || key.replace(/^!journal!/, '');
+      const id = doc._id || key.replace(/^!journal!/, "");
       journals[id] = doc;
     }
   }
 
   const newJournals = Object.values(journals).filter(
-    j => j.name && !existing.entries[j.name]
+    (j) => j.name && !existing.entries[j.name]
   );
 
   console.log(`  신규: ${newJournals.length}개 / 기존: ${Object.keys(existing.entries).length}개`);
@@ -215,66 +244,61 @@ async function processJournalPack(packName, config) {
 
   for (const journal of newJournals) {
     process.stdout.write(`  번역 중: "${journal.name}"...\n`);
-
-    const [translatedJournalName] = await deeplTranslate([journal.name]);
+    const [[translatedName]] = [await translator.translateText([journal.name], "en", "ko")];
     const journalPages = pagesByJournal[journal._id] || [];
     const pageEntries = {};
 
     for (const page of journalPages) {
-      const pageName = page.name || page.title || '';
-      const pageContent = page.text?.content || '';
-
-      const [translatedPageName] = await deeplTranslate([pageName]);
-      const [translatedContent] = pageContent
-        ? await deeplTranslate([pageContent], true)
-        : [''];
-
+      const pageName = page.name || page.title || "";
+      const pageContent = page.text?.content || "";
+      const [[tPageName]] = [await translator.translateText([pageName], "en", "ko")];
+      const tContent = pageContent
+        ? (await translator.translateText([pageContent], "en", "ko", { tagHandling: "html", ignoreTags: ["img", "br", "hr"] }))[0].text
+        : "";
       if (pageName) {
         pageEntries[pageName] = {
-          name: translatedPageName,
-          ...(pageContent && { 'text.content': translatedContent }),
+          name: tPageName.text,
+          ...(pageContent && { "text.content": tContent }),
         };
       }
       await sleep(300);
     }
 
     entries[journal.name] = {
-      name: translatedJournalName,
+      name: translatedName.text,
       ...(Object.keys(pageEntries).length && { pages: pageEntries }),
     };
-
     await sleep(300);
   }
 
-  saveOutput(outputFile, config.label, entries);
+  await saveOutput(outputFile, config.label, entries);
   console.log(`  저장: ${outputFile}`);
 }
 
 /** RollTable 팩 처리 */
-async function processTablePack(packName, config) {
+async function processTablePack(translator, packName, config) {
   const outputFile = join(OUTPUT_PATH, `potion-crafting-and-gathering.${packName}.json`);
-  const existing = loadExisting(outputFile, config.label);
-
+  const existing = await loadExistingAsync(outputFile, config.label);
   const rawDocs = await readLevelDB(join(SOURCE_PACKS, packName));
 
   const tables = {};
   const resultsByTable = {};
 
   for (const [key, doc] of Object.entries(rawDocs)) {
-    if (key.includes('results')) {
-      const afterPrefix = key.replace(/^!tables\.results!/, '');
-      const dotIdx = afterPrefix.indexOf('.');
+    if (key.includes("results")) {
+      const afterPrefix = key.replace(/^!tables\.results!/, "");
+      const dotIdx = afterPrefix.indexOf(".");
       const tableId = dotIdx >= 0 ? afterPrefix.slice(0, dotIdx) : afterPrefix;
       if (!resultsByTable[tableId]) resultsByTable[tableId] = [];
       resultsByTable[tableId].push(doc);
     } else {
-      const id = doc._id || key.replace(/^!tables!/, '');
+      const id = doc._id || key.replace(/^!tables!/, "");
       tables[id] = doc;
     }
   }
 
   const newTables = Object.values(tables).filter(
-    t => t.name && !existing.entries[t.name]
+    (t) => t.name && !existing.entries[t.name]
   );
 
   console.log(`  신규: ${newTables.length}개 / 기존: ${Object.keys(existing.entries).length}개`);
@@ -284,77 +308,109 @@ async function processTablePack(packName, config) {
 
   for (const table of newTables) {
     process.stdout.write(`  번역 중: "${table.name}"...\n`);
-
-    const [translatedName] = await deeplTranslate([table.name]);
+    const [translatedName] = await translator.translateText([table.name], "en", "ko");
     const [translatedDesc] = table.description
-      ? await deeplTranslate([table.description])
-      : [''];
+      ? await translator.translateText([table.description], "en", "ko")
+      : [{ text: "" }];
 
     const tableResults = resultsByTable[table._id] || [];
-    const resultTexts = tableResults.map(r => r.text || '').filter(Boolean);
+    const resultTexts = tableResults.map((r) => r.text || "").filter(Boolean);
     const translatedResults = resultTexts.length
-      ? await translateBatch(resultTexts)
+      ? await translateBatch(translator, resultTexts)
       : [];
 
     const resultsMap = {};
-    resultTexts.forEach((text, idx) => {
-      resultsMap[text] = translatedResults[idx];
-    });
+    resultTexts.forEach((text, idx) => { resultsMap[text] = translatedResults[idx]; });
 
     entries[table.name] = {
-      name: translatedName,
-      ...(table.description && { description: translatedDesc }),
+      name: translatedName.text,
+      ...(table.description && { description: translatedDesc.text }),
       ...(Object.keys(resultsMap).length && { results: resultsMap }),
     };
-
     await sleep(300);
   }
 
-  saveOutput(outputFile, config.label, entries);
+  await saveOutput(outputFile, config.label, entries);
   console.log(`  저장: ${outputFile}`);
+}
+
+// ─── --inspect 모드 ──────────────────────────────────────────────────────────
+
+async function inspectPack(packName) {
+  const packPath = join(SOURCE_PACKS, packName);
+  console.log(`\n[${packName}] 키 목록:`);
+  try {
+    const docs = await readLevelDB(packPath);
+    const keys = Object.keys(docs);
+    keys.slice(0, 10).forEach((k) => {
+      const doc = docs[k];
+      console.log(`  ${k} → name: "${doc.name || "(없음)"}", type: ${doc.type || "(없음)"}`);
+    });
+    console.log(`  총 ${keys.length}개`);
+  } catch (err) {
+    console.error(`  오류: ${err.message}`);
+  }
 }
 
 // ─── 메인 ────────────────────────────────────────────────────────────────────
 
 async function main() {
   const args = process.argv.slice(2);
-  const isInspect = args.includes('--inspect');
-  const packFilter = args.includes('--pack') ? args[args.indexOf('--pack') + 1] : null;
+  const isInspect = args.includes("--inspect");
+  const packFilter = args.includes("--pack") ? args[args.indexOf("--pack") + 1] : null;
 
-  if (!isInspect && !DEEPL_API_KEY) {
-    console.error('오류: DEEPL_API_KEY 환경변수가 필요합니다.');
-    console.error('사용법: DEEPL_API_KEY=your-key node scripts/translate.js');
-    process.exit(1);
-  }
-
-  const targetPacks = Object.entries(PACK_CONFIG).filter(([name]) =>
-    !packFilter || name.includes(packFilter)
+  const targetPacks = Object.entries(PACK_CONFIG).filter(
+    ([name]) => !packFilter || name.includes(packFilter)
   );
 
   if (isInspect) {
-    console.log('=== DB 구조 확인 모드 ===');
-    for (const [packName] of targetPacks) {
-      await inspectPack(packName);
-    }
+    console.log("=== DB 구조 확인 모드 ===");
+    for (const [packName] of targetPacks) await inspectPack(packName);
     return;
   }
 
-  console.log(`번역 시작 (총 ${targetPacks.length}개 팩)\n`);
+  const translator = await loadTranslator();
 
+  // DeepL 사용량 확인
+  const usage = await translator.getUsage();
+  if (usage.character) {
+    const { count, limit } = usage.character;
+    console.log(`DeepL 사용량: ${count.toLocaleString()} / ${limit.toLocaleString()} 문자`);
+    if (count / limit > 0.9) console.warn("⚠️  사용량 90% 초과!");
+  }
+
+  console.log(`\n번역 시작 (총 ${targetPacks.length + 1}개 항목)\n`);
+
+  // UI 문자열 번역 (ko.json)
+  await translateUIStrings(translator);
+
+  // 컴펜디엄 번역
   for (const [packName, config] of targetPacks) {
-    console.log(`[${packName}]`);
+    console.log(`\n[${packName}]`);
     try {
-      if (config.type === 'Item')         await processItemPack(packName, config);
-      else if (config.type === 'JournalEntry') await processJournalPack(packName, config);
-      else if (config.type === 'RollTable')    await processTablePack(packName, config);
-      console.log('  완료 ✓');
+      if (config.type === "Item")              await processItemPack(translator, packName, config);
+      else if (config.type === "JournalEntry") await processJournalPack(translator, packName, config);
+      else if (config.type === "RollTable")    await processTablePack(translator, packName, config);
+      console.log("  완료 ✓");
     } catch (err) {
       console.error(`  실패: ${err.message}`);
       if (process.env.DEBUG) console.error(err.stack);
     }
   }
 
-  console.log('\n전체 번역 완료!');
+  // 최종 사용량
+  const finalUsage = await translator.getUsage();
+  if (finalUsage.character) {
+    const { count, limit } = finalUsage.character;
+    const remaining = limit - count;
+    const pct = count / limit;
+    if (pct > 0.9)
+      console.log(`\n⚠️  DeepL 사용량: ${count.toLocaleString()}/${limit.toLocaleString()} (잔여 ${remaining.toLocaleString()})`);
+    else
+      console.log(`\n✅ DeepL 사용량: ${count.toLocaleString()}/${limit.toLocaleString()} (잔여 ${remaining.toLocaleString()})`);
+  }
+
+  console.log("\n전체 번역 완료!");
 }
 
 main();

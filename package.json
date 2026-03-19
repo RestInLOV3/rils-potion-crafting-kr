@@ -7,6 +7,7 @@
     "inspect": "node scripts/translate.js --inspect"
   },
   "devDependencies": {
-    "classic-level": "^1.4.1"
+    "classic-level": "^1.4.1",
+    "deepl-node": "^1.13.0"
   }
 }
