@@ -11,7 +11,7 @@
     },
     "Oil of Taggit (Contact)": {
       "name": "타기트의 기름 (접촉)",
-      "description": "<p>이 독에 노출된 생물은 DC 13 건강 내성 굴림에 성공해야 하며, 그렇지 못할 경우 24시간 동안 @Compendium[dnd5e.rules.w7eitkpD7QQTB6j0]{중독} 상태가 됩니다. @Compendium[dnd5e.rules.w7eitkpD7QQTB6j0]{중독} 상태가 된 생물은 @Compendium[dnd5e.rules.w7eitkpD7QQTB6j0]{무의식} 상태가 됩니다. 이 생물은 피해를 입으면 깨어납니다.</p>\n<p><strong>접촉</strong> 독<strong>.</strong> 접촉 독은 물체에 묻힐 수 있으며, 만지거나 씻어내기 전까지 효력이 지속됩니다. 노출된 피부로 접촉 독에 닿은 생물은 그 효과를 받습니다.</p>"
+      "description": "<p>이 독에 노출된 생물은 DC 13 건강 내성 굴림에 성공해야 하며, 그렇지 못할 경우 24시간 동안 @Compendium[dnd5e.rules.w7eitkpD7QQTB6j0]{중독} 상태가 됩니다. @Compendium[dnd5e.rules.w7eitkpD7QQTB6j0]{중독} 상태가 된 생물은 @Compendium[dnd5e.rules.w7eitkpD7QQTB6j0]{무의식} 상태가 됩니다. 이 생물은 피해를 입으면 깨어납니다.</p>\n<p><strong>접촉</strong> 독. 접촉 독은 물체에 묻힐 수 있으며, 만지거나 씻어내기 전까지 효력이 지속됩니다. 노출된 피부로 접촉 독에 닿은 생물은 그 효과를 받습니다.</p>"
     },
     "Essence of Rage": {
       "name": "분노의 정수",
@@ -31,7 +31,7 @@
     },
     "Potion of Poison": {
       "name": "독의 물약",
-      "description": "<p>이 혼합물은 외관, 냄새, 맛이 <strong>치유</strong> 물약이나 다른 유익한 물약과 비슷합니다. 하지만 실제로는 환상 마법으로 위장된 독입니다. <strong>‘식별’</strong><strong></strong> 주문을 사용하면 그 진정한 @Compendium[dnd5e.rules.0AGfrwZRzSG0vNKb]{성질}을 알 수 있습니다.</p>\n<p>이것을 마시면 3d6의 독 피해를 입으며, DC 13 건강 내성 굴림에 성공하지 못하면 @Compendium[dnd5e.rules.w7eitkpD7QQTB6j0]{중독}됩니다. 이 방식으로 @Compendium[dnd5e.rules.w7eitkpD7QQTB6j0]{중독} 상태인 동안, 자신의 턴이 시작될 때마다 3d6 독 피해를 입습니다. 자신의 턴이 끝날 때마다 내성 굴림을 다시 시도할 수 있습니다. 저항에 성공하면, 이후 턴에 입는 독 피해가 1d6 감소합니다. 피해가 0이 되면 독 상태는 종료됩니다.</p>"
+      "description": "<p>이 혼합물은 외관, 냄새, 맛이 <strong>치유</strong> 물약이나 다른 유익한 물약과 비슷합니다. 하지만 실제로는 환상 마법으로 위장된 독입니다. <strong>’식별’</strong> 주문을 사용하면 그 진정한 @Compendium[dnd5e.rules.0AGfrwZRzSG0vNKb]{성질}을 알 수 있습니다.</p>\n<p>이것을 마시면 3d6의 독 피해를 입으며, DC 13 건강 내성 굴림에 성공하지 못하면 @Compendium[dnd5e.rules.w7eitkpD7QQTB6j0]{중독}됩니다. 이 방식으로 @Compendium[dnd5e.rules.w7eitkpD7QQTB6j0]{중독} 상태인 동안, 자신의 턴이 시작될 때마다 3d6 독 피해를 입습니다. 자신의 턴이 끝날 때마다 내성 굴림을 다시 시도할 수 있습니다. 저항에 성공하면, 이후 턴에 입는 독 피해가 1d6 감소합니다. 피해가 0이 되면 독 상태는 종료됩니다.</p>"
     },
     "Torpor (Ingested)": {
       "name": "무력화 독(섭취)",
