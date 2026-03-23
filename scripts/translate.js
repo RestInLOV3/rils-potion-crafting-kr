@@ -25,6 +25,8 @@ const ROOT = join(__dirname, "..");
 
 const SOURCE_PACKS =
   "C:/Users/HGray/Desktop/Artwork/FVTT/modules/potion-crafting-and-gathering/packs";
+const SOURCE_RECIPES =
+  "C:/Users/HGray/Desktop/Artwork/FVTT/modules/potion-crafting-and-gathering/assets/recipes";
 const SOURCE_LANG =
   "C:/Users/HGray/Desktop/Artwork/FVTT/modules/potion-crafting-and-gathering/languages/en.json";
 const OUTPUT_PATH = join(ROOT, "languages/ko");
@@ -52,7 +54,7 @@ const PACK_CONFIG = {
   },
   "potion-crafting-and-gathering-recipes": {
     label: "포션 제작 & 수집 레시피",
-    type: "JournalEntry",
+    type: "RecipeBook",
   },
   "potion-crafting-and-gathering-tables": {
     label: "포션 제작 & 수집 표",
@@ -211,12 +213,9 @@ async function loadExistingAsync(outputFile, label) {
   return { label, entries: {} };
 }
 
-async function saveOutput(outputFile, label, entries) {
-  await fs.writeFile(
-    outputFile,
-    JSON.stringify({ label, entries }, null, 2),
-    "utf-8",
-  );
+async function saveOutput(outputFile, label, entries, converters = null) {
+  const data = { label, ...(converters && { converters }), entries };
+  await fs.writeFile(outputFile, JSON.stringify(data, null, 2), "utf-8");
 }
 
 /** Item 팩 처리 */
@@ -414,6 +413,93 @@ async function processTablePack(translator, packName, config) {
   console.log(`  저장: ${outputFile}`);
 }
 
+/** RecipeBook JSON 파일 처리 (assets/recipes/*.json) */
+async function processRecipeJsonFiles(translator, packName, config) {
+  const outputFile = join(
+    OUTPUT_PATH,
+    `potion-crafting-and-gathering.${packName}.json`,
+  );
+  const existing = await loadExistingAsync(outputFile, config.label);
+
+  const recipeFiles = (await fs.readdir(SOURCE_RECIPES))
+    .filter((f) => f.endsWith(".json"))
+    .sort();
+
+  const entries = { ...existing.entries };
+  let newBookCount = 0;
+
+  for (const file of recipeFiles) {
+    const data = JSON.parse(
+      await fs.readFile(join(SOURCE_RECIPES, file), "utf-8"),
+    );
+    const bookName = data.name;
+    if (!bookName) continue;
+
+    const existingEntry = entries[bookName] || {};
+    const existingRecipes = existingEntry.recipes || {};
+
+    const needsBookName = !existingEntry.name;
+    const needsBookDesc = !!data.description && !existingEntry.description;
+    const newRecipes = (data.recipes || []).filter(
+      (r) => r.name && !existingRecipes[r.name],
+    );
+
+    if (!needsBookName && !needsBookDesc && !newRecipes.length) continue;
+
+    newBookCount++;
+    process.stdout.write(
+      `  번역 중: "${bookName}" (레시피 ${newRecipes.length}개 신규)\n`,
+    );
+
+    // 책 이름 번역
+    const translatedBookName = needsBookName
+      ? (await translator.translateText([bookName], "en", "ko"))[0].text
+      : existingEntry.name;
+
+    // 책 설명 번역
+    const translatedBookDesc = needsBookDesc
+      ? (await translator.translateText([data.description], "en", "ko"))[0].text
+      : existingEntry.description;
+
+    // 레시피 이름/설명 일괄 번역
+    const recipeNames = newRecipes.map((r) => r.name);
+    const recipeDescs = newRecipes.map((r) => r.description || "");
+
+    const translatedNames = recipeNames.length
+      ? await translateBatch(translator, recipeNames)
+      : [];
+    const translatedDescs = recipeDescs.length
+      ? await translateBatch(translator, recipeDescs)
+      : [];
+
+    const recipesMap = { ...existingRecipes };
+    newRecipes.forEach((recipe, idx) => {
+      recipesMap[recipe.name] = {
+        name: translatedNames[idx] || recipe.name,
+        ...(recipe.description && { description: translatedDescs[idx] }),
+      };
+    });
+
+    entries[bookName] = {
+      name: translatedBookName,
+      ...(data.description && { description: translatedBookDesc }),
+      ...(Object.keys(recipesMap).length && { recipes: recipesMap }),
+    };
+
+    await sleep(300);
+  }
+
+  console.log(
+    `  신규: ${newBookCount}개 레시피 북 / 기존: ${Object.keys(existing.entries).length}개`,
+  );
+  if (!newBookCount) return;
+
+  await saveOutput(outputFile, config.label, entries, {
+    recipes: "translateRecipes",
+  });
+  console.log(`  저장: ${outputFile}`);
+}
+
 // ─── --inspect 모드 ──────────────────────────────────────────────────────────
 
 async function inspectPack(packName) {
@@ -480,6 +566,8 @@ async function main() {
         await processJournalPack(translator, packName, config);
       else if (config.type === "RollTable")
         await processTablePack(translator, packName, config);
+      else if (config.type === "RecipeBook")
+        await processRecipeJsonFiles(translator, packName, config);
       console.log("  완료 ✓");
     } catch (err) {
       console.error(`  실패: ${err.message}`);
