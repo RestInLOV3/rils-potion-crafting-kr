@@ -1,24 +1,24 @@
 {
-  "label": "포션 제작 & 수집 표",
+  "label": "Potion Crafting & Gathering - 표",
   "entries": {
     "Gathering: Desert": {
-      "name": "채집 사막",
+      "name": "채집: 사막",
       "description": "식물 폴더의 콘텐츠로 만든 임의의 테이블입니다."
     },
     "Gathering: Volcanos": {
-      "name": "모임 화산",
+      "name": "채집: 화산",
       "description": "식물 폴더의 콘텐츠로 만든 임의의 테이블입니다."
     },
     "Gathering: Hill": {
-      "name": "모임 언덕",
+      "name": "채집: 언덕",
       "description": "식물 폴더의 콘텐츠로 만든 임의의 테이블입니다."
     },
     "Gathering: Forests": {
-      "name": "채집 숲",
+      "name": "채집: 숲",
       "description": "식물 폴더의 콘텐츠로 만든 임의의 테이블입니다."
     },
     "Gathering: Coast": {
-      "name": "모임 해안",
+      "name": "채집: 해안",
       "description": "식물 폴더의 콘텐츠로 만든 임의의 테이블입니다."
     },
     "All Plants": {
@@ -26,39 +26,39 @@
       "description": "식물 폴더의 콘텐츠로 만든 임의의 테이블입니다."
     },
     "Gathering: Blightshore": {
-      "name": "채집 블레이츠쇼어",
+      "name": "채집: 블라이트쇼어",
       "description": "식물 폴더의 콘텐츠로 만든 임의의 테이블입니다."
     },
     "Gathering: Arctic": {
-      "name": "모임: 북극",
+      "name": "채집: 북극",
       "description": "식물 폴더의 콘텐츠로 만든 임의의 테이블입니다."
     },
     "Gathering: Urban Areas": {
-      "name": "모임 도시 지역",
+      "name": "채집: 도시 지역",
       "description": "식물 폴더의 콘텐츠로 만든 임의의 테이블입니다."
     },
     "Gathering: Grasslands": {
-      "name": "채집 초원",
+      "name": "채집: 초원",
       "description": "식물 폴더의 콘텐츠로 만든 임의의 테이블입니다."
     },
     "Gathering: Underground": {
-      "name": "모임: 지하",
+      "name": "채집: 지하",
       "description": "식물 폴더의 콘텐츠로 만든 임의의 테이블입니다."
     },
     "Gathering: Savannahs": {
-      "name": "채집 사바나",
+      "name": "채집: 사바나",
       "description": "식물 폴더의 콘텐츠로 만든 임의의 테이블입니다."
     },
     "Gathering: Mountains": {
-      "name": "채집 산악",
+      "name": "채집: 산",
       "description": "식물 폴더의 콘텐츠로 만든 임의의 테이블입니다."
     },
     "Gathering: Swamp": {
-      "name": "채집 늪",
+      "name": "채집: 늪",
       "description": "식물 폴더의 콘텐츠로 만든 임의의 테이블입니다."
     },
     "Gathering: Feywild": {
-      "name": "모임 페이와일드",
+      "name": "채집: 요정계",
       "description": "식물 폴더의 콘텐츠로 만든 임의의 테이블입니다."
     }
   }
