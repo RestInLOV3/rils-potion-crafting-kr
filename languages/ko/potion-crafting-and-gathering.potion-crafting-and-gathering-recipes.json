@@ -1,11 +1,11 @@
 {
-  "label": "포션 제작 & 수집 레시피",
+  "label": "Potion Crafting & Gathering - 레시피",
   "converters": {
-    "recipes": "translateRecipes"
+    "recipes": "레시피"
   },
   "entries": {
     "The Brewing Alchemist": {
-      "name": "양조 연금술사",
+      "name": "불씨 연금술사",
       "description": "일반적인 연금술 혼합물 제작 레시피가 포함되어 있습니다.",
       "recipes": {
         "Alchemist's Fire": {
@@ -47,8 +47,8 @@
       }
     },
     "The Steeped Alchemist": {
-      "name": "가파른 연금술사",
-      "description": "희귀 연금술 혼합물 제작 레시피가 포함되어 있습니다.",
+      "name": "화로 연금술사",
+      "description": "비범한 연금술 혼합물 제작 레시피가 포함되어 있습니다.",
       "recipes": {
         "Ink (Very Rare)": {
           "name": "잉크(매우 희귀)",
@@ -105,8 +105,8 @@
       }
     },
     "The Distilled Alchemist": {
-      "name": "증류된 연금술사",
-      "description": "희귀한 연금술 혼합물 제작 레시피가 포함되어 있습니다.",
+      "name": "용광로 연금술사",
+      "description": "고급 연금술 혼합물 제작 레시피가 포함되어 있습니다.",
       "recipes": {
         "Ink (Rare)": {
           "name": "잉크 (희귀)",
@@ -188,7 +188,7 @@
     },
     "The Golden Alchemist": {
       "name": "황금 연금술사",
-      "description": "매우 희귀한 연금술 혼합물을 제작할 수 있는 레시피가 포함되어 있습니다.",
+      "description": "희귀 연금술 혼합물을 제작할 수 있는 레시피가 포함되어 있습니다.",
       "recipes": {
         "Ink (Legendary)": {
           "name": "잉크 (전설)",
@@ -229,7 +229,7 @@
       }
     },
     "The Budding Herbalist": {
-      "name": "신진 약초학자",
+      "name": "새싹 약초학자",
       "description": "일반 물약과 연고 제작 레시피가 포함되어 있습니다.",
       "recipes": {
         "Antitoxin": {
@@ -267,8 +267,8 @@
       }
     },
     "The Flowering Herbalist": {
-      "name": "꽃 피는 약초꾼",
-      "description": "희귀 물약과 연고 제작 레시피가 포함되어 있습니다.",
+      "name": "개화 약초학자",
+      "description": "고급 물약과 연고 제작 레시피가 포함되어 있습니다.",
       "recipes": {
         "Elixir of Health": {
           "name": "건강의 비약",
@@ -301,8 +301,8 @@
       }
     },
     "The Growing Herbalist": {
-      "name": "성장하는 약초학자",
-      "description": "흔하지 않은 물약과 연고 제작 레시피가 포함되어 있습니다.",
+      "name": "무성한 약초학자",
+      "description": "비범한 물약과 연고 제작 레시피가 포함되어 있습니다.",
       "recipes": {
         "Blight Ichor": {
           "name": "병충해 이코",
@@ -359,8 +359,8 @@
       }
     },
     "The Dankest Herbalist": {
-      "name": "가장 고마운 약초꾼",
-      "description": "매우 희귀한 물약과 연고 제작 레시피가 포함되어 있습니다.",
+      "name": "만개한 약초학자",
+      "description": "희귀한 물약과 연고 제작 레시피가 포함되어 있습니다.",
       "recipes": {
         "Potion of Protection": {
           "name": "보호의 물약",
@@ -377,7 +377,7 @@
       }
     },
     "The Mild Poisoner": {
-      "name": "가벼운 중독자",
+      "name": "순한 독 제조자",
       "description": "일반적인 독을 만들기 위한 레시피가 포함되어 있습니다.",
       "recipes": {
         "Basic Poison": {
@@ -395,8 +395,8 @@
       }
     },
     "The Umami Poisoner": {
-      "name": "우마미 포이너",
-      "description": "희귀 독을 만들기 위한 레시피가 포함되어 있습니다.",
+      "name": "감칠맛 독 제조자",
+      "description": "고급 독을 만들기 위한 레시피가 포함되어 있습니다.",
       "recipes": {
         "Burnt Orthur Fumes": {
           "name": "탄 오르투르 연기",
@@ -437,8 +437,8 @@
       }
     },
     "The Spicy Poisoner": {
-      "name": "매운 독살자",
-      "description": "흔하지 않은 독을 만들기 위한 레시피가 포함되어 있습니다.",
+      "name": "매운 독 제조자",
+      "description": "비범한 독을 만들기 위한 레시피가 포함되어 있습니다.",
       "recipes": {
         "Angel's Powder": {
           "name": "천사의 가루",
@@ -487,8 +487,8 @@
       }
     },
     "The Ghost Pepper Poisoner": {
-      "name": "유령 후추 중독자",
-      "description": "매우 희귀한 독을 만들기 위한 레시피가 포함되어 있습니다.",
+      "name": "마라 독 제조자",
+      "description": "희귀한 독을 만들기 위한 레시피가 포함되어 있습니다.",
       "recipes": {
         "Deathsleep": {
           "name": "데스슬립",
