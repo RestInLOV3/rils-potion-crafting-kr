@@ -32,6 +32,16 @@
         "id": "potion-crafting-and-gathering",
         "type": "module"
       }
+    ],
+    "recommends": [
+      {
+        "id": "mastercrafted",
+        "type": "module"
+      },
+      {
+        "id": "gatherer",
+        "type": "module"
+      }
     ]
   }
 }
