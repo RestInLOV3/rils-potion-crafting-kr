@@ -1,7 +1,10 @@
 {
   "label": "Potion Crafting & Gathering - 레시피",
-  "converters": {
-    "recipes": "레시피"
+  "mapping": {
+    "recipes": {
+      "path": "recipes",
+      "converter": "translateRecipes"
+    }
   },
   "entries": {
     "The Brewing Alchemist": {
