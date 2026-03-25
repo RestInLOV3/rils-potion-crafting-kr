@@ -1,0 +1,49 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract version
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Update module.json
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          jq \
+            --arg version "$VERSION" \
+            --arg manifest "https://github.com/$REPO/releases/latest/download/module.json" \
+            --arg download "https://github.com/$REPO/releases/download/$TAG/module.zip" \
+            '.version = $version | .manifest = $manifest | .download = $download' \
+            module.json > module.tmp.json
+          mv module.tmp.json module.json
+
+      - name: Create zip
+        run: |
+          zip -r module.zip \
+            module.json \
+            languages/ \
+            scripts/babele-register.js
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "v${{ steps.version.outputs.version }}"
+          files: |
+            module.json
+            module.zip
