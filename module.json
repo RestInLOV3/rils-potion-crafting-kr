@@ -18,7 +18,8 @@
     }
   ],
   "esmodules": [
-    "scripts/babele-register.js"
+    "scripts/babele-register.js",
+    "scripts/mastercrafted-ui.js"
   ],
   "compatibility": {
     "minimum": "13",
