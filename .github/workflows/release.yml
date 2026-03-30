@@ -38,7 +38,7 @@ jobs:
           zip -r module.zip \
             module.json \
             languages/ \
-            scripts/babele-register.js
+            scripts/babele-register.js \
             scripts/mastercrafted-ui.js
 
       - name: Create release
